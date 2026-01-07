@@ -324,3 +324,66 @@ Authorization: Bearer <AccessToken>
 
 - **林沛琪**
 - 國立臺東大學 資訊工程學系
+
+- # MyJLPT 功能逐關驗收 Checklist
+
+## 1. 註冊 Register
+- [ ] 前端 /auth/register 回 200
+- [ ] Cognito User Pool 出現該使用者（UNCONFIRMED）
+- [ ] DynamoDB MyJLPT_Users 出現 item（user_id 正確）
+
+## 2. Email 驗證 Confirm
+- [ ] /auth/confirm 回 200
+- [ ] Cognito 狀態變 CONFIRMED、email_verified=true
+
+## 3. 登入 Login
+- [ ] /auth/login 回 200
+- [ ] 前端存到 idToken/accessToken
+- [ ] JWT claims 內有 sub/email
+
+## 4. 第一次登入強制改密碼（如有）
+- [ ] login 回傳 NEW_PASSWORD_REQUIRED
+- [ ] /auth/first-login 回 200
+- [ ] 再次 login 不再出現 challenge
+
+## 5. 取得我的資料 Get Me
+- [ ] GET /me 回 200
+- [ ] 回傳 user_id=sub 且資料完整
+- [ ] DynamoDB 用 sub 查得到同一筆
+
+## 6. 更新個人資料 Update Profile
+- [ ] PATCH/PUT /user 回 200
+- [ ] DynamoDB 同一筆 item 欄位更新（updatedAt 改變）
+
+## 7. 忘記密碼 Forgot Password
+- [ ] /auth/forgot 回 200（收到信）
+- [ ] /auth/forgot/confirm 回 200
+- [ ] 新密碼可登入
+
+## 8. 錯題庫 Wrong
+- [ ] 答錯會寫入 DynamoDB
+- [ ] 錯題列表可讀取
+- [ ] 同題再錯 count 會累加
+- [ ] 點錯題可重新出題
+
+## 9. 筆記 Notes
+- [ ] 新增筆記成功
+- [ ] 列表讀取成功
+- [ ] 刪除成功
+- [ ] 搜尋成功（如有）
+
+## 10. 進度 Progress
+- [ ] 今日學習會記錄
+- [ ] 連續天數正確（如有）
+- [ ] 報表頁面顯示正確
+
+## 11. OCR
+- [ ] 上傳圖片到 S3 成功
+- [ ] OCR API 回 200 並回傳 lines
+- [ ] 可取得最新圖片（如有）
+
+## 12. 提醒信（SNS + EventBridge）
+- [ ] EventBridge 有觸發
+- [ ] Lambda Logs 有跑
+- [ ] SNS 訂閱已確認
+- [ ] 條件符合時會寄出提醒
