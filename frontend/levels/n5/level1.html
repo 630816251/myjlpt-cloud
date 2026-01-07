@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N5-1 基礎名詞｜MyJLPT Cloud</title>
+
+<style>
+:root{
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --border:#d9dee6;
+  --brand:#3a6f8f;
+  --ok:#16a34a;
+  --err:#ef4444;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Helvetica, Arial, "Noto Sans TC", sans-serif;
+  background:var(--bg);
+}
+header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:14px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.brand{font-weight:900;color:var(--brand);}
+.btn{
+  border:1px solid var(--border);
+  background:#fff;
+  padding:8px 14px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+.wrap{
+  max-width:900px;
+  margin:24px auto;
+  padding:0 16px;
+}
+.game{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px;
+}
+.board{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+.card{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:8px;
+  text-align:center;
+  font-weight:900;
+  cursor:pointer;
+}
+.card.selected{border-color:var(--brand);background:#e6f0f6;}
+.card.ok{background:#dcfce7;border-color:var(--ok);}
+.card.err{background:#fee2e2;border-color:var(--err);}
+.footer{margin-top:16px;font-weight:900;color:#6b7280;}
+.done{text-align:center;padding:30px;}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">MyJLPT Cloud｜N5-1</div>
+  <button class="btn" onclick="location.href='../n5.html'">返回 N5 關卡</button>
+</header>
+
+<div class="wrap">
+  <h2>N5-1 基礎名詞</h2>
+  <div class="game" id="game"></div>
+</div>
+
+<script>
+/* ========= API（錯題寫入 DynamoDB） ========= */
+const API = "https://3y29jupv6j.execute-api.us-east-1.amazonaws.com/wrong";
+
+function recordWrong(jp, zh){
+  fetch(API,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      userId:"demo-user",
+      tier:"N5",
+      stage:"1",
+      jp, zh
+    })
+  }).catch(err=>console.error("❌ wrong record failed", err));
+}
+
+/* ========= 題庫 ========= */
+const WORDS = [
+  { id:1, jp:"人", zh:"人" },
+  { id:2, jp:"学生", zh:"學生" },
+  { id:3, jp:"学校", zh:"學校" },
+  { id:4, jp:"先生", zh:"老師" },
+  { id:5, jp:"友達", zh:"朋友" }
+];
+
+/* 🔥 關鍵：只存「完成數量」 */
+const STORAGE_KEY = "vocab_progress_n5_1";
+
+/* ========= 狀態 ========= */
+let left=[], right=[];
+let first=null;
+let solvedCount=0;
+let locked=false;
+
+/* ========= 工具 ========= */
+const shuffle = a => [...a].sort(()=>Math.random()-0.5);
+const save = () => localStorage.setItem(STORAGE_KEY, solvedCount);
+const load = () => solvedCount = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+/* ========= 畫面 ========= */
+function render(){
+  const game=document.getElementById("game");
+
+  if(solvedCount === WORDS.length){
+    game.innerHTML=`
+      <div class="done">
+        <h2>🎉 關卡完成！</h2>
+        <p>你已完成 N5-1 基礎名詞。</p>
+        <button class="btn" onclick="location.href='../n5.html'">回到 N5 關卡</button>
+      </div>`;
+    return;
+  }
+
+  game.innerHTML=`
+    <div class="board">
+      <div id="left"></div>
+      <div id="right"></div>
+    </div>
+    <div class="footer">完成：${solvedCount} / ${WORDS.length}</div>
+  `;
+
+  const L=document.getElementById("left");
+  const R=document.getElementById("right");
+
+  left.forEach(w=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.textContent=w.jp;
+    d.onclick=()=>pick(d,w,"jp");
+    L.appendChild(d);
+  });
+
+  right.forEach(w=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.textContent=w.zh;
+    d.onclick=()=>pick(d,w,"zh");
+    R.appendChild(d);
+  });
+}
+
+/* ========= 配對邏輯 ========= */
+function pick(el, w, side){
+  if(locked || el.classList.contains("ok")) return;
+
+  el.classList.add("selected");
+
+  if(!first){
+    first = { el, w, side };
+    return;
+  }
+
+  locked = true;
+
+  // ===== 配對正確 =====
+  if(first.w.id === w.id && first.side !== side){
+
+    // 從資料陣列移除（🔥關鍵）
+    left  = left.filter(x => x.id !== w.id);
+    right = right.filter(x => x.id !== w.id);
+
+    solvedCount++;
+    save();
+
+    setTimeout(() => {
+      first = null;
+      locked = false;
+      render();   // 重新 render → 已消除
+    }, 300);
+
+  } 
+  // ===== 配對錯誤 =====
+  else {
+    el.classList.add("err");
+    first.el.classList.add("err");
+
+    recordWrong(first.w);   // 存錯題（改成整題）
+
+    setTimeout(() => {
+      el.className = "card";
+      first.el.className = "card";
+      first = null;
+      locked = false;
+    }, 500);
+  }
+}
+
+/* ========= 初始化 ========= */
+function init(){
+  load();
+  left=shuffle(WORDS);
+  right=shuffle(WORDS);
+  render();
+}
+init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MyJLPT Plan｜日語學習計畫 × 雲端定時提醒</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --text:#1f2a37; --muted:#6b7280;
+      --line:#e5e7eb; --brand:#3a6f8f; --good:#16a34a; --bad:#ef4444;
+      --shadow: 0 10px 28px rgba(0,0,0,.08);
+      --r:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background:var(--bg); color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(255,255,255,.88); backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .topbar{
+      max-width:1100px; margin:0 auto; padding:14px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.2px;
+      color:var(--brand);
+    }
+    .brand .dot{
+      width:12px; height:12px; border-radius:999px; background:var(--brand);
+      box-shadow: 0 0 0 5px rgba(58,111,143,.16);
+    }
+    nav{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .tab{
+      border:1px solid var(--line); background:#fff; color:var(--text);
+      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700;
+    }
+    .tab.active{
+      border-color: rgba(58,111,143,.45);
+      box-shadow: 0 0 0 4px rgba(58,111,143,.12);
+      color:var(--brand);
+    }
+    main{
+      max-width:1100px; margin:0 auto; padding:18px 16px 40px;
+    }
+    .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;
+    }
+    @media (max-width: 920px){
+      .grid{grid-template-columns:1fr}
+    }
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+      box-shadow: var(--shadow); padding:16px;
+    }
+    .card h2{margin:0 0 10px; font-size:18px}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .spacer{height:8px}
+    .btn{
+      border:1px solid rgba(58,111,143,.55);
+      background:var(--brand); color:#fff; font-weight:900;
+      padding:10px 14px; border-radius:10px; cursor:pointer;
+    }
+    .btn.secondary{
+      background:#fff; color:var(--brand);
+    }
+    .btn.ghost{
+      background:transparent; color:var(--brand);
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line); padding:8px 10px; border-radius:999px;
+      background:#fff; font-weight:800;
+    }
+    .pill.good{border-color: rgba(22,163,74,.35); color:var(--good); background:rgba(22,163,74,.06)}
+    .pill.bad{border-color: rgba(239,68,68,.35); color:var(--bad); background:rgba(239,68,68,.06)}
+    .kpi{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-top:10px;
+    }
+    @media (max-width: 600px){ .kpi{grid-template-columns:1fr} }
+    .kpi .box{
+      border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff;
+    }
+    .kpi .num{font-size:22px; font-weight:1000; color:var(--brand)}
+    .kpi .lab{color:var(--muted); font-weight:700; margin-top:2px}
+    input, select, textarea{
+      width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px;
+      outline:none; background:#fff;
+    }
+    textarea{min-height:96px; resize:vertical}
+    .form-grid{
+      display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+    }
+    @media (max-width: 720px){ .form-grid{grid-template-columns:1fr} }
+    table{
+      width:100%; border-collapse:collapse; margin-top:10px;
+      overflow:hidden; border-radius:12px; border:1px solid var(--line);
+    }
+    th, td{
+      padding:10px 10px; border-bottom:1px solid var(--line);
+      text-align:left; font-size:14px;
+    }
+    th{background:#fafafa; color:var(--muted); font-weight:900}
+    tr:last-child td{border-bottom:none}
+    .status-dot{
+      width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:8px;
+      vertical-align:middle;
+    }
+    .dot-good{background:var(--good)}
+    .dot-bad{background:var(--bad)}
+    .note{
+      border:1px dashed rgba(58,111,143,.45);
+      background: rgba(58,111,143,.06);
+      padding:12px; border-radius:12px;
+    }
+    .hide{display:none}
+    .footer{
+      margin-top:16px; color:var(--muted); font-size:13px;
+    }
+    code.inline{
+      padding:2px 6px; border:1px solid var(--line); border-radius:8px;
+      background:#fff; font-weight:800;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand" title="MyJLPT Plan">
+      <span class="dot"></span>
+      <div>
+        <div style="font-size:16px; line-height:1.1;">MyJLPT Plan</div>
+        <div class="muted" style="font-size:12px;">日語學習計畫 × 雲端定時提醒</div>
+      </div>
+    </div>
+
+    <nav>
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="plan">Plan</button>
+      <button class="tab" data-view="today">Today</button>
+      <button class="tab" data-view="history">History</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Dashboard -->
+  <section id="view-dashboard" class="view">
+    <div class="grid">
+      <div class="card">
+        <h2>今日狀態</h2>
+        <div class="row">
+          <div class="pill" id="todayPill">載入中…</div>
+          <div class="muted" id="todayDateText"></div>
+        </div>
+
+        <div class="kpi">
+          <div class="box">
+            <div class="num" id="kpiStreak">0</div>
+            <div class="lab">連續學習（天）</div>
+          </div>
+          <div class="box">
+            <div class="num" id="kpiWeekDone">0</div>
+            <div class="lab">本週完成（天）</div>
+          </div>
+          <div class="box">
+            <div class="num" id="kpiTotal">0</div>
+            <div class="lab">總完成（天）</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="note">
+          <div style="font-weight:1000; color:var(--brand); margin-bottom:6px;">今天的任務</div>
+          <div id="taskText" class="muted">—</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="row">
+          <button class="btn" id="btnGoToday">開始今天的學習</button>
+          <button class="btn secondary" id="btnQuickToggle">快速切換：完成/取消</button>
+        </div>
+
+        <div class="footer">
+          提醒系統會在每天 <b>09:00</b> 檢查「今日是否完成」並發送 Email（你已經用 EventBridge → Lambda → SNS 做好了）。
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>雲端提醒設定</h2>
+        <div class="muted">
+          這裡是「展示區」：你可以把自己已建好的 AWS 資源寫在這裡，老師看就知道你做的是完整系統。
+        </div>
+        <div class="spacer"></div>
+
+        <div class="form-grid">
+          <div>
+            <label class="muted">EventBridge Cron（UTC）</label>
+            <input value="cron(0 1 * * ? *)" readonly />
+          </div>
+          <div>
+            <label class="muted">台灣時間</label>
+            <input value="每天 09:00" readonly />
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="note">
+          <div style="font-weight:1000; margin-bottom:6px;">可選：接 API（之後再做也行）</div>
+          <div class="muted">
+            若你之後要把打卡紀錄存到 DynamoDB/RDS，可新增 API：
+            <div class="spacer"></div>
+            <div>GET <code class="inline">/status/today</code></div>
+            <div>POST <code class="inline">/status/today</code>（完成/取消）</div>
+            <div>GET <code class="inline">/status/history</code></div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <label class="muted">API Base URL（選填）</label>
+        <input id="apiBaseInput" placeholder="例如：https://xxxx.execute-api.us-east-1.amazonaws.com/dev" />
+
+        <div class="spacer"></div>
+        <button class="btn secondary" id="btnSaveApi">儲存 API 設定</button>
+        <div class="footer" id="apiStatusText"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plan -->
+  <section id="view-plan" class="view hide">
+    <div class="card">
+      <h2>學習計畫（Plan）</h2>
+      <div class="muted">這頁主要是「教育設計證明頁」。你可以先做得很簡單，但看起來很完整。</div>
+
+      <div class="spacer"></div>
+
+      <div class="form-grid">
+        <div>
+          <label class="muted">目標等級（JLPT）</label>
+          <select id="planLevel">
+            <option value="N5">N5</option>
+            <option value="N4" selected>N4</option>
+            <option value="N3">N3</option>
+          </select>
+        </div>
+        <div>
+          <label class="muted">每日學習時間（分鐘）</label>
+          <input id="planMinutes" type="number" min="5" max="120" value="15" />
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="form-grid">
+        <div>
+          <label class="muted">每日單字量（個）</label>
+          <input id="planVocab" type="number" min="1" max="50" value="8" />
+        </div>
+        <div>
+          <label class="muted">每日文法點（個）</label>
+          <input id="planGrammar" type="number" min="0" max="10" value="1" />
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <label class="muted">學習理念（寫給自己／寫給老師）</label>
+      <textarea id="planMotto">每天一點點，比一次很多更重要。</textarea>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <button class="btn" id="btnSavePlan">儲存計畫</button>
+        <button class="btn secondary" id="btnResetPlan">恢復預設</button>
+      </div>
+
+      <div class="footer" id="planSavedText"></div>
+    </div>
+  </section>
+
+  <!-- Today -->
+  <section id="view-today" class="view hide">
+    <div class="card">
+      <h2>今日打卡（Today）</h2>
+      <div class="muted">這頁只做一件事：讓你「標記今天有沒有完成」，讓雲端排程能判斷要不要寄提醒信。</div>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <div class="pill" id="todayPill2">載入中…</div>
+        <div class="muted" id="todayDateText2"></div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="note">
+        <div style="font-weight:1000; color:var(--brand); margin-bottom:6px;">今天的任務</div>
+        <div id="taskText2" class="muted">—</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <button class="btn" id="btnMarkDone">我今天完成日語學習 ✅</button>
+        <button class="btn secondary" id="btnUnmarkDone">取消完成（今天沒學）</button>
+      </div>
+
+      <div class="footer" id="todayActionText"></div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section id="view-history" class="view hide">
+    <div class="card">
+      <h2>學習紀錄總覽（History）</h2>
+      <div class="muted">展示你的累積成果。老師通常很吃這頁。</div>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <button class="btn secondary" id="btnExport">匯出 JSON</button>
+        <button class="btn ghost" id="btnClear">清空本機紀錄（Demo 用）</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:160px;">日期</th>
+            <th>狀態</th>
+            <th style="width:140px;">來源</th>
+          </tr>
+        </thead>
+        <tbody id="historyTbody">
+          <tr><td colspan="3" class="muted">載入中…</td></tr>
+        </tbody>
+      </table>
+
+      <div class="footer" id="historyHint"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+/**
+ * ✅ 這份前端：預設用 localStorage 存「打卡/連續天數」讓你立刻可 Demo。
+ * ✅ 你已經做好的雲端提醒（EventBridge → Lambda → SNS）只要 Lambda 能讀到「今天是否完成」即可。
+ * ✅ 未來你要接後端 API（API Gateway/Lambda/DB），把 record 改成 fetch() 就能升級。
+ */
+
+// --------------------- Storage Model ---------------------
+const STORAGE_KEY = "myjlpt_plan_v1";
+
+const defaultState = () => ({
+  plan: {
+    level: "N4",
+    minutes: 15,
+    vocab: 8,
+    grammar: 1,
+    motto: "每天一點點，比一次很多更重要。"
+  },
+  api: {
+    baseUrl: "" // optional: API Gateway base url
+  },
+  history: {
+    // "YYYY-MM-DD": { done: true/false, source: "local" | "api" }
+  }
+});
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // shallow merge safety
+    const s = defaultState();
+    return {
+      ...s,
+      ...parsed,
+      plan: { ...s.plan, ...(parsed.plan||{}) },
+      api: { ...s.api, ...(parsed.api||{}) },
+      history: { ...(parsed.history||{}) }
+    };
+  }catch(e){
+    console.warn("Failed to load state, reset.", e);
+    return defaultState();
+  }
+}
+
+function saveState(s){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+// --------------------- Date helpers ---------------------
+function pad2(n){ return String(n).padStart(2, "0"); }
+function todayYMD(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth()+1);
+  const day = pad2(d.getDate());
+  return `${y}-${m}-${day}`;
+}
+function formatZh(ymd){
+  const [y,m,d] = ymd.split("-");
+  return `${y} 年 ${m} 月 ${d} 日`;
+}
+function addDays(ymd, delta){
+  const [y,m,d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate() + delta);
+  return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`;
+}
+function isSameWeek(ymd, baseYmd){
+  // week: Mon-Sun based. We'll compute ISO-like week start.
+  const toDate = (s) => {
+    const [y,m,d] = s.split("-").map(Number);
+    return new Date(y, m-1, d);
+  };
+  const a = toDate(ymd);
+  const b = toDate(baseYmd);
+  const startOfWeek = (date) => {
+    const d = new Date(date);
+    const day = (d.getDay() + 6) % 7; // Mon=0..Sun=6
+    d.setDate(d.getDate() - day);
+    d.setHours(0,0,0,0);
+    return d;
+  };
+  return startOfWeek(a).getTime() === startOfWeek(b).getTime();
+}
+
+// --------------------- Business logic ---------------------
+function getTodayRecord(state){
+  const ymd = todayYMD();
+  return state.history[ymd] || { done:false, source:"local" };
+}
+
+function setTodayDone(state, done, source="local"){
+  const ymd = todayYMD();
+  state.history[ymd] = { done, source };
+  saveState(state);
+}
+
+function calcStreak(state){
+  // streak = consecutive done days ending at today (if today not done => 0)
+  const t = todayYMD();
+  const rec = state.history[t];
+  if(!rec || !rec.done) return 0;
+
+  let streak = 0;
+  let cur = t;
+  while(true){
+    const r = state.history[cur];
+    if(r && r.done){
+      streak += 1;
+      cur = addDays(cur, -1);
+      continue;
+    }
+    break;
+  }
+  return streak;
+}
+
+function countTotalDone(state){
+  return Object.values(state.history).filter(x => x.done).length;
+}
+
+function countWeekDone(state){
+  const t = todayYMD();
+  return Object.entries(state.history)
+    .filter(([ymd, v]) => v.done && isSameWeek(ymd, t))
+    .length;
+}
+
+function buildTaskText(plan){
+  // simple deterministic task suggestion
+  return `單字 ${plan.vocab} 個 + 文法 ${plan.grammar} 個（約 ${plan.minutes} 分鐘）｜目標：JLPT ${plan.level}`;
+}
+
+// --------------------- Optional API hooks ---------------------
+// 你之後若有做 API Gateway，開啟下面的模式就能用。
+// 目前預設只用 localStorage，不會打 API。
+async function apiPostToday(baseUrl, done){
+  // expected endpoint: POST /status/today  body: { date:"YYYY-MM-DD", done:true/false }
+  const url = baseUrl.replace(/\/$/, "") + "/status/today";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ date: todayYMD(), done })
+  });
+  if(!res.ok) throw new Error("API POST failed: " + res.status);
+  return await res.json().catch(()=>({}));
+}
+
+// --------------------- UI wiring ---------------------
+let state = loadState();
+
+const tabs = document.querySelectorAll(".tab");
+const views = {
+  dashboard: document.getElementById("view-dashboard"),
+  plan: document.getElementById("view-plan"),
+  today: document.getElementById("view-today"),
+  history: document.getElementById("view-history"),
+};
+
+function switchView(name){
+  Object.entries(views).forEach(([k, el])=>{
+    el.classList.toggle("hide", k !== name);
+  });
+  tabs.forEach(t => t.classList.toggle("active", t.dataset.view === name));
+  renderAll();
+}
+
+tabs.forEach(t=>{
+  t.addEventListener("click", ()=> switchView(t.dataset.view));
+});
+
+// Dashboard elements
+const todayPill = document.getElementById("todayPill");
+const todayDateText = document.getElementById("todayDateText");
+const kpiStreak = document.getElementById("kpiStreak");
+const kpiWeekDone = document.getElementById("kpiWeekDone");
+const kpiTotal = document.getElementById("kpiTotal");
+const taskText = document.getElementById("taskText");
+document.getElementById("btnGoToday").addEventListener("click", ()=> switchView("today"));
+document.getElementById("btnQuickToggle").addEventListener("click", async ()=>{
+  const rec = getTodayRecord(state);
+  await applyTodayDone(!rec.done);
+});
+
+// Plan elements
+const planLevel = document.getElementById("planLevel");
+const planMinutes = document.getElementById("planMinutes");
+const planVocab = document.getElementById("planVocab");
+const planGrammar = document.getElementById("planGrammar");
+const planMotto = document.getElementById("planMotto");
+const planSavedText = document.getElementById("planSavedText");
+
+document.getElementById("btnSavePlan").addEventListener("click", ()=>{
+  state.plan.level = planLevel.value;
+  state.plan.minutes = clampInt(planMinutes.value, 5, 120, 15);
+  state.plan.vocab = clampInt(planVocab.value, 1, 50, 8);
+  state.plan.grammar = clampInt(planGrammar.value, 0, 10, 1);
+  state.plan.motto = (planMotto.value || "").trim() || defaultState().plan.motto;
+  saveState(state);
+  planSavedText.textContent = "✅ 已儲存學習計畫";
+  setTimeout(()=> planSavedText.textContent="", 1800);
+  renderAll();
+});
+
+document.getElementById("btnResetPlan").addEventListener("click", ()=>{
+  state.plan = defaultState().plan;
+  saveState(state);
+  planSavedText.textContent = "已恢復預設";
+  setTimeout(()=> planSavedText.textContent="", 1800);
+  renderAll();
+});
+
+// Today elements
+const todayPill2 = document.getElementById("todayPill2");
+const todayDateText2 = document.getElementById("todayDateText2");
+const taskText2 = document.getElementById("taskText2");
+const todayActionText = document.getElementById("todayActionText");
+
+document.getElementById("btnMarkDone").addEventListener("click", async ()=> applyTodayDone(true));
+document.getElementById("btnUnmarkDone").addEventListener("click", async ()=> applyTodayDone(false));
+
+// History elements
+const historyTbody = document.getElementById("historyTbody");
+const historyHint = document.getElementById("historyHint");
+
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "myjlpt-plan-export.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btnClear").addEventListener("click", ()=>{
+  if(!confirm("確定要清空本機紀錄嗎？（只影響你的瀏覽器）")) return;
+  state = defaultState();
+  saveState(state);
+  renderAll();
+});
+
+// API config
+const apiBaseInput = document.getElementById("apiBaseInput");
+const apiStatusText = document.getElementById("apiStatusText");
+document.getElementById("btnSaveApi").addEventListener("click", ()=>{
+  state.api.baseUrl = (apiBaseInput.value || "").trim();
+  saveState(state);
+  apiStatusText.textContent = state.api.baseUrl
+    ? "✅ 已儲存 API Base URL（之後可接後端）"
+    : "已清除 API Base URL（目前使用本機資料）";
+  setTimeout(()=> apiStatusText.textContent="", 2000);
+});
+
+// --------------------- Actions ---------------------
+async function applyTodayDone(done){
+  // 如果有填 API Base URL，就「嘗試」同步到後端；失敗則仍存本機（不會讓你卡住）。
+  const base = (state.api.baseUrl || "").trim();
+  if(base){
+    try{
+      await apiPostToday(base, done);
+      setTodayDone(state, done, "api");
+      todayActionText.textContent = "✅ 已同步到 API（後端）";
+    }catch(err){
+      console.warn(err);
+      setTodayDone(state, done, "local");
+      todayActionText.textContent = "⚠️ API 同步失敗，已先存本機（仍可 Demo）";
+    }
+  }else{
+    setTodayDone(state, done, "local");
+    todayActionText.textContent = done ? "✅ 已記錄：今天完成" : "已取消：今天未完成";
+  }
+  setTimeout(()=> todayActionText.textContent="", 2200);
+  renderAll();
+}
+
+function clampInt(v, min, max, fallback){
+  const n = parseInt(v, 10);
+  if(Number.isNaN(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+// --------------------- Render ---------------------
+function renderAll(){
+  state = loadState();
+
+  // Fill Plan
+  planLevel.value = state.plan.level;
+  planMinutes.value = state.plan.minutes;
+  planVocab.value = state.plan.vocab;
+  planGrammar.value = state.plan.grammar;
+  planMotto.value = state.plan.motto;
+
+  // API
+  apiBaseInput.value = state.api.baseUrl || "";
+
+  // Today status
+  const ymd = todayYMD();
+  const rec = getTodayRecord(state);
+  const pillHtml = rec.done
+    ? `<span class="status-dot dot-good"></span>今日已完成`
+    : `<span class="status-dot dot-bad"></span>今日尚未學習`;
+
+  todayPill.className = "pill " + (rec.done ? "good":"bad");
+  todayPill.innerHTML = pillHtml;
+  todayDateText.textContent = formatZh(ymd);
+
+  todayPill2.className = "pill " + (rec.done ? "good":"bad");
+  todayPill2.innerHTML = pillHtml;
+  todayDateText2.textContent = formatZh(ymd);
+
+  // KPIs
+  const streak = calcStreak(state);
+  kpiStreak.textContent = streak;
+  kpiWeekDone.textContent = countWeekDone(state);
+  kpiTotal.textContent = countTotalDone(state);
+
+  // Task
+  const task = buildTaskText(state.plan);
+  taskText.textContent = task;
+  taskText2.textContent = task;
+
+  // History
+  renderHistoryTable();
+
+  // footer hint
+  historyHint.textContent =
+    "提示：你的雲端 Lambda（每天 9:00）只要能讀到「今天是否完成」就能決定是否寄提醒信。"
+}
+
+function renderHistoryTable(){
+  const entries = Object.entries(state.history)
+    .sort(([a],[b]) => a < b ? 1 : -1); // desc
+
+  if(entries.length === 0){
+    historyTbody.innerHTML = `<tr><td colspan="3" class="muted">目前還沒有紀錄，去 Today 打卡一次吧。</td></tr>`;
+    return;
+  }
+
+  const rows = entries.map(([ymd, v])=>{
+    const status = v.done
+      ? `<span class="status-dot dot-good"></span>完成`
+      : `<span class="status-dot dot-bad"></span>未完成`;
+    const src = v.source || "local";
+    return `
+      <tr>
+        <td>${formatZh(ymd)}</td>
+        <td>${status}</td>
+        <td class="muted">${src}</td>
+      </tr>
+    `;
+  }).join("");
+
+  historyTbody.innerHTML = rows;
+}
+
+// init
+switchView("dashboard");
+</script>
+</body>
+</html>

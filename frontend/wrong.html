@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的錯題庫｜MyJLPT</title>
+
+<style>
+body{ margin:0; font-family: Helvetica, Arial, "Noto Sans TC"; background:#f5f6f8; }
+.wrap{ max-width:720px; margin:30px auto; background:#fff; padding:24px; border-radius:16px; box-shadow:0 10px 24px rgba(0,0,0,.1); }
+h1{ margin:0 0 12px; color:#b91c1c; }
+.desc{ color:#555; margin-bottom:16px; line-height:1.6; }
+.list{ display:flex; flex-direction:column; gap:12px; }
+.item{ border:1px solid #ddd; border-radius:12px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.word{ font-size:18px; font-weight:900; }
+.sub{ font-size:13px; color:#666; margin-top:4px; }
+.meta{ text-align:right; font-size:13px; color:#666; }
+.count{ font-size:18px; font-weight:900; color:#dc2626; }
+.empty{ text-align:center; color:#888; padding:40px 0; }
+.footer{ margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+button{ padding:10px 16px; border-radius:10px; border:1px solid #ccc; background:#fff; cursor:pointer; font-weight:900; }
+.badge{ display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #ddd; font-weight:900; font-size:12px; color:#444; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>❌ 我的錯題庫</h1>
+  <div class="desc">
+    以下是你在練習中答錯過的單字（依錯誤次數排序）
+    <div style="margin-top:10px;">
+      <span class="badge" id="sourceBadge">來源：讀取中...</span>
+    </div>
+  </div>
+
+  <div class="list" id="wrongList"></div>
+
+  <div class="footer">
+    <button onclick="goBack()">← 回 VOCAB</button>
+    <button onclick="syncNow()">同步本機錯題 → 雲端</button>
+    <button onclick="reload()">重新載入</button>
+  </div>
+</div>
+
+<script src="js/wrong-recorder.js"></script>
+<script>
+const listEl = document.getElementById("wrongList");
+const badgeEl = document.getElementById("sourceBadge");
+
+function goBack(){ location.href = "vocab.html"; }
+function reload(){ loadWrong(); }
+
+async function syncNow(){
+  badgeEl.textContent = "來源：同步中...";
+  const r = await MyJLPTWrong.syncWrongQueueToServer();
+  await loadWrong();
+  if(r && r.ok){
+    alert(`同步完成：${r.synced || 0} 筆（剩餘 ${r.remain || 0} 筆）`);
+  }else{
+    alert("同步失敗：請先登入或檢查 API/CORS");
+  }
+}
+
+function fmt(t){
+  if(!t) return "";
+  try{
+    const d = new Date(t);
+    return d.toLocaleString();
+  }catch{ return t; }
+}
+
+async function loadWrong(){
+  listEl.innerHTML = `<div class="empty">載入中...</div>`;
+
+  const token = localStorage.getItem("idToken");
+  if(!token){
+    // 仍然允許用 local 顯示（你想硬性要求登入也可以改成 return）
+    // listEl.innerHTML = `<div class="empty">請先登入</div>`;
+    // return;
+  }
+
+  const { source, items } = await MyJLPTWrong.getWrongList();
+  badgeEl.textContent = `來源：${source === "server" ? "DynamoDB（雲端）" : "localStorage（本機）"}`;
+
+  if(!items || items.length === 0){
+    listEl.innerHTML = `<div class="empty">目前沒有錯題 🎉</div>`;
+    return;
+  }
+
+  // 保險排序
+  items.sort((a,b)=> (b.wrongCount||0) - (a.wrongCount||0));
+
+  listEl.innerHTML = "";
+  items.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div>
+        <div class="word">${item.jp || item.questionId}</div>
+        <div class="sub">${item.zh || ""} ${item.tier ? `・${item.tier}` : ""} ${item.stage ? `・第${item.stage}關` : ""}</div>
+      </div>
+      <div class="meta">
+        <div class="count">錯 ${item.wrongCount || 1} 次</div>
+        <div>${fmt(item.lastWrongAt || item.at)}</div>
+      </div>
+    `;
+    listEl.appendChild(div);
+  });
+}
+
+loadWrong();
+</script>
+</body>
+</html>

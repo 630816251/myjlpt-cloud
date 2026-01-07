@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>登入｜MyJLPT Cloud</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "標楷體", "Noto Serif TC", serif;
+      background-color: #e7f3ec;
+    }
+
+    .page {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .brand {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 24px;
+    }
+
+    .login-box {
+      background-color: #ffffff;
+      border: 1px solid #cfcfcf;
+      padding: 32px 36px;
+      width: 420px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px;
+      font-size: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #bcbcbc;
+      box-sizing: border-box;
+    }
+
+    .input:focus {
+      background-color: #3a6f8f;
+      color: #ffffff;
+      outline: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 22px;
+      background-color: #dcefee;
+      border: 1px solid #9fbcbc;
+      cursor: pointer;
+    }
+
+    .login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .login-btn:hover:not(:disabled) {
+      background-color: #cbe6e3;
+    }
+
+    .forgot {
+      margin-top: 14px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .forgot a {
+      color: #3a6f8f;
+      text-decoration: none;
+    }
+
+    .forgot a:hover {
+      text-decoration: underline;
+    }
+
+    .register-box {
+      margin-top: 24px;
+      width: 180px;
+      padding: 10px;
+      text-align: center;
+      background-color: #b9ded9;
+      border: 1px solid #7faeb0;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .register-box:hover {
+      background-color: #a6d4ce;
+    }
+
+    #msg {
+      margin-top: 10px;
+      font-size: 14px;
+      color: red;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+<div class="page">
+  <div class="panel">
+
+    <div class="brand">MyJLPT Cloud</div>
+
+    <div class="login-box">
+      <input id="email" class="input" placeholder="請輸入帳號">
+      <input id="password" class="input" type="password" placeholder="請輸入密碼">
+      <button class="login-btn" id="btnLogin">登 入</button>
+
+      <div class="forgot">
+        <a href="forgot-password.html">忘記密碼？</a>
+      </div>
+
+      <div id="msg"></div>
+    </div>
+
+    <div class="register-box" onclick="location.href='register.html'">
+      建立新帳號
+    </div>
+
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnLogin");
+  const msg = document.getElementById("msg");
+
+  btn.onclick = async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      msg.textContent = "請輸入帳號與密碼";
+      return;
+    }
+
+    btn.disabled = true;
+    msg.textContent = "登入中...";
+
+    try {
+      const result = await login(email, password);
+
+      // 🔐 第一次登入 → 強制改密碼（⚠️ 此時尚未登入完成）
+      if (result && result.challenge === "NEW_PASSWORD_REQUIRED") {
+        sessionStorage.setItem("NEW_PW_SESSION", result.session);
+        sessionStorage.setItem("NEW_PW_EMAIL", result.email);
+        location.replace("new-password.html");
+        return;
+      }
+
+      // ✅ 只有「真正登入完成」才會走到這裡
+      const res = await fetch(`${MYJLPT_CONFIG.API.USER}/me`, {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+      });
+
+      if (!res.ok) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("idToken");
+        localStorage.removeItem("refreshToken");
+
+        alert("此帳號已被停用或不存在，請聯絡管理員。");
+        btn.disabled = false;
+        return;
+      }
+
+      location.replace("index.html");
+
+    } catch (err) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("idToken");
+      localStorage.removeItem("refreshToken");
+
+      msg.textContent = "登入失敗：" + err.message;
+      btn.disabled = false;
+    }
+  };
+});
+</script>
+
+</body>
+</html>

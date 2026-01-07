@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N1 關卡｜MyJLPT Cloud</title>
+<script>
+/* ===== N1 大門鎖（需完成 N5 + N4 + N3 + N2） ===== */
+function tierCompleted(levels){
+  return levels.every(lv => {
+    const done = parseInt(
+      localStorage.getItem(`vocab_${lv.id}_progress`) || "0",
+      10
+    );
+    return done >= lv.total;
+  });
+}
+
+const N5_LEVELS = [
+  { id:"n5_1", total:5 },
+  { id:"n5_2", total:5 },
+  { id:"n5_3", total:5 },
+];
+
+const N4_LEVELS = [
+  { id:"n4_1", total:5 },
+  { id:"n4_2", total:5 },
+  { id:"n4_3", total:5 },
+];
+
+const N3_LEVELS = [
+  { id:"n3_1", total:5 },
+  { id:"n3_2", total:5 },
+];
+
+const N2_LEVELS = [
+  { id:"n2_1", total:5 },
+  { id:"n2_2", total:5 },
+];
+
+if(
+  !tierCompleted(N5_LEVELS) ||
+  !tierCompleted(N4_LEVELS) ||
+  !tierCompleted(N3_LEVELS) ||
+  !tierCompleted(N2_LEVELS)
+){
+  alert("請依序完成 N5、N4、N3 與 N2 所有關卡");
+  location.href = "../vocab.html";
+}
+</script>
+
+<style>
+:root{
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --border:#d9dee6;
+  --text:#1f2a37;
+  --muted:#6b7280;
+  --brand:#3a6f8f;
+  --ok:#16a34a;
+  --warn:#f59e0b;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: Helvetica, Arial, "Noto Sans TC", sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ===== Header ===== */
+header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:14px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.brand{
+  font-weight:900;
+  color:var(--brand);
+}
+.btn{
+  border:1px solid var(--border);
+  background:#fff;
+  padding:8px 14px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* ===== Layout ===== */
+.wrap{
+  max-width:1000px;
+  margin:24px auto 40px;
+  padding:0 16px;
+}
+.title{
+  font-size:24px;
+  font-weight:900;
+  margin-bottom:6px;
+}
+.subtitle{
+  color:var(--muted);
+  margin-bottom:18px;
+  line-height:1.6;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr;}
+}
+
+/* ===== Card ===== */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+  position:relative;
+}
+.card.locked{
+  opacity:.55;
+}
+
+.tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:900;
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+}
+.dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#cbd5e1;
+}
+.dot.ok{background:var(--ok)}
+.dot.warn{background:var(--warn)}
+
+.card-title{
+  margin:12px 0 6px;
+  font-size:18px;
+  font-weight:900;
+}
+.card-desc{
+  color:var(--muted);
+  font-size:14px;
+  min-height:42px;
+  line-height:1.6;
+}
+
+/* ===== Progress ===== */
+.bar{
+  margin-top:10px;
+  height:10px;
+  background:#eef2f7;
+  border-radius:999px;
+  overflow:hidden;
+}
+.bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#3a6f8f,#2f5f7a);
+  transition:width .3s ease;
+}
+.meta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+/* ===== Actions ===== */
+.actions{
+  margin-top:14px;
+}
+.go{
+  display:block;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(58,111,143,.35);
+  background:#fff;
+  color:var(--brand);
+  font-weight:900;
+  text-align:center;
+  text-decoration:none;
+}
+.lock-msg{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:flex-end;
+  padding:12px;
+  pointer-events:none;
+}
+.lock-msg span{
+  background:rgba(255,255,255,.9);
+  border:1px dashed #cbd5e1;
+  border-radius:10px;
+  padding:8px 10px;
+  font-weight:900;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">MyJLPT Cloud｜N1</div>
+  <button class="btn" onclick="location.href='../vocab.html'">返回等級選單</button>
+</header>
+
+<div class="wrap">
+ <div class="title">N1 高階關卡</div>
+<div class="subtitle">
+  挑戰接近母語者程度的高階詞彙與語意理解。
+</div>
+
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+/* ========= 設定區 ========= */
+const CONFIG = {
+  lockByOrder: true,
+  levels: [
+    {
+      id: "n1_1",
+      title: "N1-1 高階詞彙",
+      desc: "具高度抽象性與書面性的詞彙。",
+      total: 5,
+      href: "n1/level1.html"
+    }
+  ]
+};
+
+
+
+/* ========= 工具 ========= */
+const key = id => `vocab_progress_${id}`;
+
+const getDone = id => parseInt(localStorage.getItem(key(id))||"0",10);
+const unlocked = i => !CONFIG.lockByOrder || i===0 ||
+  getDone(CONFIG.levels[i-1].id) >= CONFIG.levels[i-1].total;
+
+function render(){
+  const grid=document.getElementById("grid");
+  grid.innerHTML="";
+
+  CONFIG.levels.forEach((lv,i)=>{
+    const done=Math.min(getDone(lv.id), lv.total);
+    const pct=Math.round(done / lv.total * 100);
+    const ok=pct>=100;
+    const warn=pct>0 && !ok;
+    const can=unlocked(i);
+
+    const card=document.createElement("div");
+    card.className="card"+(can?"":" locked");
+    card.innerHTML=`
+      <div class="tag">
+        <span class="dot ${ok?"ok":warn?"warn":""}"></span>
+        ${ok?"已完成":warn?"進行中":"未開始"}
+      </div>
+
+      <div class="card-title">${lv.title}</div>
+      <div class="card-desc">${lv.desc}</div>
+
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="meta">
+        <span>${done} / ${lv.total} 題</span>
+        <span>${pct}%</span>
+      </div>
+
+      <div class="actions">
+        <a class="go" href="${can?lv.href:"#"}">進入關卡 →</a>
+      </div>
+
+      ${can?"":`<div class="lock-msg"><span>🔒 完成上一關解鎖</span></div>`}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>

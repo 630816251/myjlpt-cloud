@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>OCR 日文學習筆記</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", system-ui;
+      background: #f5f6f8;
+      color: #333;
+    }
+    header {
+      background: #3a6f8f;
+      color: #fff;
+      padding: 16px 20px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    main {
+      max-width: 960px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    h2 {
+      margin-top: 0;
+      color: #3a6f8f;
+    }
+    .lines p { margin: 4px 0; }
+    .vocab span {
+      display: inline-block;
+      background: #eef3f7;
+      border-radius: 20px;
+      padding: 6px 12px;
+      margin: 4px;
+    }
+    button {
+      background: #3a6f8f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>📘 OCR 日文學習筆記</header>
+
+<main>
+
+  <div class="card">
+    <h2>📷 上傳 / 選擇圖片</h2>
+
+    <input type="file" id="fileInput" accept="image/*" />
+    <button id="uploadBtn">上傳圖片</button>
+
+    <hr>
+
+    <select id="imageSelect">
+      <option value="">選擇已上傳圖片</option>
+    </select>
+
+    <button id="loadBtn">取得 OCR 結果</button>
+  </div>
+
+  <div class="card">
+    <h2>📄 OCR 文字</h2>
+    <div id="lines">尚未載入</div>
+  </div>
+
+  <div class="card">
+    <h2>⭐ 重點整理</h2>
+    <ul id="summary"><li>尚未載入</li></ul>
+  </div>
+
+  <div class="card">
+    <h2>📝 單字候選</h2>
+    <div id="vocab">尚未載入</div>
+  </div>
+
+</main>
+
+<script>
+/* ===== API 設定（請確認這是你 API Gateway 的 Invoke URL） ===== */
+const API_BASE = "https://60k6cc5mi6.execute-api.us-east-1.amazonaws.com";
+const UPLOAD_URL_API = `${API_BASE}/upload-url`;
+const LIST_API = `${API_BASE}/images`;
+const OCR_API = `${API_BASE}/ocr/run`;
+
+/* ===== DOM ===== */
+const fileInput   = document.getElementById("fileInput");
+const uploadBtn   = document.getElementById("uploadBtn");
+const imageSelect = document.getElementById("imageSelect");
+const loadBtn     = document.getElementById("loadBtn");
+
+const linesEl   = document.getElementById("lines");
+const summaryEl = document.getElementById("summary");
+const vocabEl   = document.getElementById("vocab");
+
+/* ===== Token ===== */
+function getIdToken() {
+  return localStorage.getItem("idToken");
+}
+
+function authHeaders() {
+  const token = getIdToken();
+  if (!token) {
+    alert("尚未登入，請先登入");
+    throw new Error("No idToken");
+  }
+  return {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  };
+}
+
+/* ===== 上傳圖片（Presigned URL） ===== */
+uploadBtn.onclick = async () => {
+  const file = fileInput.files[0];
+  if (!file) return alert("請選擇圖片");
+
+  try {
+    // 1️⃣ 取得 presigned URL
+    const r1 = await fetch(UPLOAD_URL_API, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type || "image/jpeg"
+      })
+    });
+    const d1 = await r1.json();
+    if (!r1.ok) throw new Error(d1.message || "取得上傳網址失敗");
+
+    // 2️⃣ PUT 上傳到 S3
+    const r2 = await fetch(d1.uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "image/jpeg" },
+      body: file
+    });
+    if (!r2.ok) throw new Error("上傳到 S3 失敗");
+
+    alert("✅ 上傳成功");
+    loadImageList();
+
+  } catch (e) {
+    alert("❌ " + e.message);
+    console.error(e);
+  }
+};
+
+/* ===== 載入圖片清單（只會看到自己的） ===== */
+async function loadImageList() {
+  try {
+    const res = await fetch(LIST_API, {
+      headers: { "Authorization": `Bearer ${getIdToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "載入失敗");
+
+    imageSelect.innerHTML = `<option value="">選擇已上傳圖片</option>`;
+    data.images.forEach(img => {
+      const opt = document.createElement("option");
+      opt.value = img.key;
+      opt.textContent = img.name;
+      imageSelect.appendChild(opt);
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* ===== OCR ===== */
+loadBtn.onclick = async () => {
+  const key = imageSelect.value;
+  if (!key) return alert("請選擇圖片");
+
+  try {
+    const res = await fetch(`${OCR_API}?key=${encodeURIComponent(key)}`, {
+      headers: { "Authorization": `Bearer ${getIdToken()}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "OCR 失敗");
+
+    linesEl.innerHTML = "";
+    data.lines.forEach(l => {
+      const p = document.createElement("p");
+      p.textContent = l;
+      linesEl.appendChild(p);
+    });
+
+    summaryEl.innerHTML = "";
+    data.summary.forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = s;
+      summaryEl.appendChild(li);
+    });
+
+    vocabEl.innerHTML = "";
+    data.vocab_candidates.forEach(w => {
+      const span = document.createElement("span");
+      span.textContent = w;
+      vocabEl.appendChild(span);
+    });
+
+  } catch (e) {
+    alert("❌ " + e.message);
+  }
+};
+
+/* ===== 初始化 ===== */
+loadImageList();
+</script>
+
+</body>
+</html>

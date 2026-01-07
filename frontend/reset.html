@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>重設密碼｜MyJLPT Cloud</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Helvetica, Arial, "Noto Sans TC", "PingFang TC", sans-serif;
+      background-color: #f0f2f5;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    .card {
+      width: 380px;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 28px 26px 32px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    .brand {
+      font-size: 32px;
+      font-weight: 700;
+      color: #3a6f8f;
+      letter-spacing: -1px;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .hint {
+      font-size: 14px;
+      color: #606770;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccd0d5;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #3a6f8f;
+    }
+
+    input[readonly] {
+      background-color: #f5f6f7;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button {
+      width: 100%;
+      background-color: #3a6f8f;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: bold;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    button:disabled {
+      background-color: #a0bfc4;
+      cursor: not-allowed;
+    }
+
+    .resend {
+      margin-top: 14px;
+      font-size: 14px;
+      color: #3a6f8f;
+      cursor: pointer;
+    }
+
+    .resend:hover {
+      text-decoration: underline;
+    }
+
+    .back-link {
+      margin-top: 18px;
+      font-size: 14px;
+    }
+
+    .back-link a {
+      color: #3a6f8f;
+      text-decoration: none;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+
+      <div class="brand">MyJLPT Cloud</div>
+      <div class="title">重設密碼</div>
+
+      <div class="hint">
+        請輸入 Email 中收到的驗證碼，<br>
+        並設定新的登入密碼。
+      </div>
+
+      <!-- Email（唯讀） -->
+      <input type="email" id="email" readonly />
+
+      <!-- 驗證碼 -->
+      <input type="text" id="code" placeholder="驗證碼" />
+
+      <!-- 新密碼 -->
+      <input
+        type="password"
+        id="newPassword"
+        placeholder="新密碼（至少 8 碼，含英文與數字）"
+      />
+
+      <button id="submitBtn" onclick="resetPasswordHandler()">
+        確認重設密碼
+      </button>
+
+      <div class="resend" onclick="resendCode()">
+        沒收到驗證碼？重新寄送
+      </div>
+
+      <div class="back-link">
+        <a href="login.html">返回登入</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+
+  <script>
+    // ===== 讀取 email =====
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+
+    if (!email) {
+      alert("缺少電子郵件資訊，請重新操作忘記密碼流程");
+      window.location.href = "forgot.html";
+    } else {
+      document.getElementById("email").value = email;
+    }
+
+    // ===== 密碼基本檢查 =====
+    function validatePassword(pw) {
+      return pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+    }
+
+    // ===== 重設密碼 =====
+    async function resetPasswordHandler() {
+      const code = document.getElementById("code").value.trim();
+      const newPassword = document.getElementById("newPassword").value;
+      const btn = document.getElementById("submitBtn");
+
+      if (!code || !newPassword) {
+        alert("請完整填寫驗證碼與新密碼");
+        return;
+      }
+
+      if (!validatePassword(newPassword)) {
+        alert("密碼需至少 8 碼，且包含英文與數字");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "處理中…";
+
+      try {
+        await confirmForgotPassword(email, code, newPassword);
+        alert("✅ 密碼已成功重設，請使用新密碼登入");
+        window.location.href = "login.html";
+      } catch (err) {
+        alert("❌ 重設失敗：" + (err.message || "請確認驗證碼是否正確"));
+        btn.disabled = false;
+        btn.textContent = "確認重設密碼";
+      }
+    }
+
+    // ===== 重新寄送驗證碼 =====
+    async function resendCode() {
+      try {
+        await forgotPassword(email);
+        alert("✅ 驗證碼已重新寄送，請至信箱查看");
+      } catch (err) {
+        alert("❌ 無法重新寄送：" + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

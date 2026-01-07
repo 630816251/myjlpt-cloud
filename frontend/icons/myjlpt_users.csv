@@ -1,0 +1,4 @@
+email,familyName,givenName,birthdate,gender,createdAt,status,userId
+peggygoodhappy@gmail.com,林,佩琪,2024-03-03,female,2025-12-22T09:06:08.489924+00:00,DELETED,f448f4d8-d0d1-7029-31a6-60e4064a566a
+peggygoodhappy@gmail.com,林,佩琪,2004-09-17,female,2025-12-22T13:22:11.118580+00:00,ACTIVE,5408e458-60e1-70c9-b36a-a363e1d03b1e
+11211111@gm.nttu.edu.tw,林,沛琪,2004-09-17,female,2025-12-22T13:13:37.774030+00:00,ACTIVE,e418a498-4061-707a-edaf-53b8e8319042

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>建立新帳號｜MyJLPT Cloud</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Helvetica, Arial, "Noto Sans TC", "PingFang TC", sans-serif;
+      background-color: #e7f3ec;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      width: 380px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      padding: 20px;
+    }
+
+    .brand {
+      text-align: center;
+      font-size: 30px;
+      font-weight: 700;
+      color: #3e779a;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #606770;
+      margin-bottom: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccd0d5;
+      box-sizing: border-box;
+    }
+
+    .label {
+      font-size: 12px;
+      color: #606770;
+      margin: 6px 0 4px;
+    }
+
+    .gender {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .gender label {
+      flex: 1;
+      border: 1px solid #ccd0d5;
+      border-radius: 5px;
+      padding: 8px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #606770;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .register-btn {
+      width: 100%;
+      background-color: #9fbcbc;
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .register-btn:hover {
+      background-color: #cbe6e3;
+    }
+
+    #msg {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: #1877f2;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <div class="card">
+
+    <div class="brand">MyJLPT Cloud</div>
+    <div class="title">建立新帳號</div>
+    
+
+    <!-- 姓名 -->
+    <div class="row">
+      <input id="familyName" placeholder="姓氏">
+      <input id="givenName" placeholder="名字">
+    </div>
+
+    <!-- 生日 -->
+    <div class="label">出生日期</div>
+    <div class="row">
+      <select id="birthYear"></select>
+      <select id="birthMonth"></select>
+      <select id="birthDay"></select>
+    </div>
+
+    <!-- 性別 -->
+    <div class="label">性別</div>
+    <div class="gender">
+      <label>女性 <input type="radio" name="gender" value="female"></label>
+      <label>男性 <input type="radio" name="gender" value="male"></label>
+      <label>自訂 <input type="radio" name="gender" value="other"></label>
+    </div>
+
+    <!-- Email -->
+    <input id="email" placeholder="電子郵件地址">
+
+    <div class="hint">
+      系統將寄送驗證信與初始密碼至此信箱
+    </div>
+
+    <button class="register-btn" id="btnRegister">註冊</button>
+
+    <div id="msg"></div>
+
+    <div class="footer">
+      <a href="login.html">已經有帳號了？</a>
+    </div>
+
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+
+<script>
+  const emailEl = document.getElementById("email");
+  const familyNameEl = document.getElementById("familyName");
+  const givenNameEl = document.getElementById("givenName");
+  const yearSel = document.getElementById("birthYear");
+  const monthSel = document.getElementById("birthMonth");
+  const daySel = document.getElementById("birthDay");
+  const msg = document.getElementById("msg");
+  const btnRegister = document.getElementById("btnRegister");
+
+  // ===== 初始化 年 =====
+  yearSel.innerHTML = `<option value="">年</option>`;
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 1900; y--) {
+    yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+  }
+
+  // ===== 初始化 月 =====
+  monthSel.innerHTML = `<option value="">月</option>`;
+  for (let m = 1; m <= 12; m++) {
+    const v = String(m).padStart(2, "0");
+    monthSel.innerHTML += `<option value="${v}">${m} 月</option>`;
+  }
+
+  // ===== 閏年 / 天數 =====
+  function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  }
+
+  function getDaysInMonth(year, month) {
+    if (!year || !month) return 31;
+    const m = parseInt(month, 10);
+    if (m === 2) return isLeapYear(year) ? 29 : 28;
+    if ([4, 6, 9, 11].includes(m)) return 30;
+    return 31;
+  }
+
+  function rebuildDayOptions() {
+    const year = yearSel.value;
+    const month = monthSel.value;
+    const prevDay = daySel.value;
+
+    daySel.innerHTML = `<option value="">日</option>`;
+    const days = getDaysInMonth(year, month);
+
+    for (let d = 1; d <= days; d++) {
+      const v = String(d).padStart(2, "0");
+      daySel.innerHTML += `<option value="${v}">${d}</option>`;
+    }
+
+    if (prevDay && parseInt(prevDay, 10) <= days) {
+      daySel.value = prevDay;
+    }
+  }
+
+  yearSel.addEventListener("change", rebuildDayOptions);
+  monthSel.addEventListener("change", rebuildDayOptions);
+
+  // ===== 註冊 =====
+  btnRegister.onclick = async () => {
+    const email = emailEl.value.trim();
+    const familyName = familyNameEl.value.trim();
+    const givenName = givenNameEl.value.trim();
+
+    if (!email) {
+      msg.textContent = "請填寫 Email";
+      return;
+    }
+
+    const birthdate =
+      yearSel.value && monthSel.value && daySel.value
+        ? `${yearSel.value}-${monthSel.value}-${daySel.value}`
+        : "";
+
+    if (birthdate) {
+      const selectedDate = new Date(birthdate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate > today) {
+        msg.textContent = "出生日期不可為未來時間";
+        return;
+      }
+    }
+
+    const genderEl = document.querySelector("input[name='gender']:checked");
+    const gender = genderEl ? genderEl.value : "";
+
+    msg.textContent = "註冊中...";
+
+    try {
+      const res = await fetch(
+        `https://h9xjivtbvb.execute-api.us-east-1.amazonaws.com/pord/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            familyName,
+            givenName,
+            birthdate,
+            gender
+          })
+        }
+      );
+
+      const data = await res.json();
+      const body = data.body ? JSON.parse(data.body) : {};
+
+      if (!res.ok) {
+        throw new Error(body.message || "註冊失敗");
+      }
+
+      // ✅ 成功才跳頁
+    localStorage.setItem("pendingEmail", email);
+
+    // ✅ 跳轉到設定新密碼頁
+    location.href = "new-password.html";
+
+
+    } catch (err) {
+      msg.textContent = "❌ 註冊失敗：" + err.message;
+    }
+  };
+</script>
+
+
+</body>
+</html>

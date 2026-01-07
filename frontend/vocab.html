@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOCAB 等級選單｜MyJLPT Cloud</title>
+
+<style>
+:root{
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --border:#d9dee6;
+  --text:#1f2a37;
+  --muted:#6b7280;
+  --brand:#3a6f8f;
+  --ok:#16a34a;
+  --warn:#f59e0b;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: Helvetica, Arial, "Noto Sans TC";
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:14px 18px;
+  font-weight:900;
+  color:var(--brand);
+}
+.wrap{
+  max-width:1000px;
+  margin:24px auto 40px;
+  padding:0 16px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr;}
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+  position:relative;
+}
+.card.locked{opacity:.55}
+.tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:900;
+}
+.dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#cbd5e1;
+}
+.dot.ok{background:var(--ok)}
+.dot.warn{background:var(--warn)}
+.title{
+  margin:10px 0 6px;
+  font-size:18px;
+  font-weight:900;
+}
+.desc{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.6;
+}
+.bar{
+  margin-top:10px;
+  height:10px;
+  background:#eef2f7;
+  border-radius:999px;
+  overflow:hidden;
+}
+.bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#3a6f8f,#2f5f7a);
+}
+.meta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:700;
+}
+.go{
+  display:block;
+  margin-top:14px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(58,111,143,.35);
+  background:#fff;
+  color:var(--brand);
+  font-weight:900;
+  text-align:center;
+  text-decoration:none;
+}
+.lock-msg{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:flex-end;
+  padding:12px;
+}
+.lock-msg span{
+  background:rgba(255,255,255,.9);
+  border:1px dashed #cbd5e1;
+  border-radius:10px;
+  padding:8px 10px;
+  font-weight:900;
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="titlebar">MyJLPT Cloud｜VOCAB</div>
+  <a href="../index.html" class="home-btn">🏠 回首頁</a>
+</header>
+
+<div class="wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+/* =============================
+   等級結構定義
+============================= */
+const CONFIG = {
+  tiers: [
+    {
+      id:"N5",
+      href:"levels/n5.html",
+      desc:"基礎核心單字",
+      levels:[
+        { id:"n5_1", total:5 },
+        { id:"n5_2", total:5 },
+        { id:"n5_3", total:5 }
+      ]
+    },
+    {
+      id:"N4",
+      href:"levels/n4.html",
+      desc:"常用動詞與生活情境",
+      levels:[
+        { id:"n4_1", total:5 },
+        { id:"n4_2", total:5 },
+        { id:"n4_3", total:5 }
+      ]
+    },
+    {
+      id:"N3",
+      href:"levels/n3.html",
+      desc:"閱讀理解常見詞彙",
+      levels:[
+        { id:"n3_1", total:5 },
+        { id:"n3_2", total:5 }
+      ]
+    },
+    {
+      id:"N2",
+      href:"levels/n2.html",
+      desc:"高頻抽象與書面語",
+      levels:[
+        { id:"n2_1", total:5 },
+        { id:"n2_2", total:5 }
+      ]
+    },
+    {
+      id:"N1",
+      href:"levels/n1.html",
+      desc:"高階母語等級詞彙",
+      levels:[
+        { id:"n1_1", total:5 }
+      ]
+    }
+  ]
+};
+
+/* =============================
+   工具
+============================= */
+function getDone(levelId){
+  const key = `vocab_progress_${levelId}`;
+  const raw = localStorage.getItem(key);
+  const val = parseInt(raw || "0", 10);
+
+  console.log("[進度讀取]", key, raw, "=>", val);
+  return val;
+}
+
+
+function tierProgress(tier){
+  const total = tier.levels.reduce((a,b)=>a+b.total,0);
+  const done = tier.levels.reduce(
+    (a,b)=>a+Math.min(getDone(b.id), b.total),0
+  );
+  return {
+    total,
+    done,
+    percent: total===0 ? 0 : Math.round(done/total*100)
+  };
+}
+
+function isTierUnlocked(index){
+  if(index===0) return true;
+  for(let i=0;i<index;i++){
+    if(tierProgress(CONFIG.tiers[i]).percent<100){
+      return false;
+    }
+  }
+  return true;
+}
+
+/* =============================
+   Render
+============================= */
+function render(){
+  const grid=document.getElementById("grid");
+  grid.innerHTML="";
+
+  CONFIG.tiers.forEach((tier,index)=>{
+    const prog=tierProgress(tier);
+    const unlocked=isTierUnlocked(index);
+    const ok=prog.percent>=100;
+    const warn=prog.percent>0 && !ok;
+
+    const card=document.createElement("div");
+    card.className="card"+(unlocked?"":" locked");
+
+    card.innerHTML=`
+      <div class="tag">
+        <span class="dot ${ok?"ok":warn?"warn":""}"></span>
+        ${ok?"已通關":warn?"進行中":"未開始"}
+      </div>
+
+      <div class="title">${tier.id}</div>
+      <div class="desc">${tier.desc}</div>
+
+      <div class="bar"><span style="width:${prog.percent}%"></span></div>
+      <div class="meta">
+        <span>${prog.done} / ${prog.total} 題</span>
+        <span>${prog.percent}%</span>
+      </div>
+
+      ${
+        unlocked
+          ? `<a class="go" href="${tier.href}">進入 ${tier.id}</a>`
+          : `<div class="go" style="opacity:.5">🔒 請依序完成前面等級</div>`
+      }
+
+      ${unlocked?"":`<div class="lock-msg"><span>🔒 前一等級尚未完成</span></div>`}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>

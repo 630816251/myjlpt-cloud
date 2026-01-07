@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Grammar - MyJLPT Cloud</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<h2>📚 Grammar（文法學習卡）</h2>
+
+<div class="card">
+  <h3>新增文法</h3>
+  <input id="g-name" placeholder="文法（例：〜ながら）">
+  <input id="g-usage" placeholder="用法（例：動詞連用形 + ながら）">
+  <input id="g-level" placeholder="等級（N5 / N4 / N3）">
+  <textarea id="g-exp" placeholder="中文說明"></textarea>
+  <input id="g-example" placeholder="例句">
+  <button onclick="createGrammar()">新增文法</button>
+  <p id="g-msg" class="msg"></p>
+</div>
+
+<div class="card">
+  <h3>文法卡片</h3>
+  <div id="grammar-list" class="grammar-grid"></div>
+</div>
+
+<p><a href="index.html">⬅ 回首頁</a></p>
+
+<script src="api.js"></script>
+<script src="grammar.js"></script>
+</body>
+</html>

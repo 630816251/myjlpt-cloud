@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N4-1 常用動詞｜MyJLPT Cloud</title>
+
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --border:#d9dee6; --text:#1f2a37; --muted:#6b7280;
+  --brand:#3a6f8f; --ok:#16a34a; --err:#ef4444; --shadow:0 10px 24px rgba(0,0,0,.08); --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Helvetica,Arial,"Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+.brand{font-weight:900;color:var(--brand);}
+.btn{border:1px solid var(--border);background:#fff;padding:8px 14px;border-radius:10px;font-weight:800;cursor:pointer;}
+.wrap{max-width:900px;margin:24px auto 40px;padding:0 16px;}
+.title{font-size:24px;font-weight:900;margin-bottom:6px;}
+.subtitle{color:var(--muted);margin-bottom:18px;}
+.game{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+.board{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:700px){.board{grid-template-columns:1fr;}}
+.col h3{margin:0 0 10px;text-align:center;color:var(--muted);}
+.card{background:#f9fafb;border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;font-weight:900;margin-bottom:8px;cursor:pointer;transition:.15s;}
+.card:hover{background:#eef2f7}
+.card.selected{border-color:var(--brand);background:#e6f0f6;}
+.card.ok{background:#dcfce7;border-color:var(--ok);color:#065f46;cursor:default;}
+.card.err{background:#fee2e2;border-color:var(--err);}
+.footer{margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-weight:900;}
+.progress{color:var(--muted);}
+.done{text-align:center;padding:30px 10px;}
+.done h2{margin:0 0 10px;}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="brand">MyJLPT Cloud｜N4-1</div>
+  <button class="btn" onclick="location.href='../n4.html'">返回 N4 關卡</button>
+</header>
+
+<div class="wrap">
+  <div class="title">N4-1 常用動詞</div>
+  <div class="subtitle">請配對正確的日文動詞與中文意思。</div>
+  <div class="game" id="game"></div>
+</div>
+
+<script>
+/* ===== API ===== */
+const API = "https://3y29jupv6j.execute-api.us-east-1.amazonaws.com/wrong";
+function recordWrong({tier, stage, jp, zh}){
+  fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ userId:"demo-user", tier, stage, jp, zh })
+  }).catch(()=>{});
+}
+
+/* ===== Level Keys (對齊 VOCAB 選單) ===== */
+const LEVEL_ID = "n4_1";
+const PROGRESS_KEY = `vocab_progress_${LEVEL_ID}`;
+const STATE_KEY    = `vocab_state_${LEVEL_ID}`;
+
+/* ===== 題庫 ===== */
+const WORDS = [
+  { id:1, jp:"始める", zh:"開始" },
+  { id:2, jp:"続ける", zh:"繼續" },
+  { id:3, jp:"考える", zh:"思考" },
+  { id:4, jp:"決める", zh:"決定" },
+  { id:5, jp:"伝える", zh:"傳達" }
+];
+const STORAGE_KEY = "vocab_progress_n4_1";
+let left=[], right=[], first=null, locked=false;
+let solvedIds = new Set();
+
+/* ===== 工具 ===== */
+const shuffle = arr => [...arr].sort(()=>Math.random()-0.5);
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STATE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    solvedIds = new Set(arr);
+  }catch{ solvedIds = new Set(); }
+}
+function saveState(){
+  const arr = [...solvedIds];
+  localStorage.setItem(STATE_KEY, JSON.stringify(arr));
+  localStorage.setItem(PROGRESS_KEY, String(arr.length)); // ✅ 選單讀這個
+}
+
+/* ===== Render ===== */
+function render(){
+  const game = document.getElementById("game");
+  const solved = solvedIds.size;
+
+  if(solved >= WORDS.length){
+    saveState();
+    game.innerHTML = `
+      <div class="done">
+        <h2>🎉 關卡完成！</h2>
+        <p>你已完成本關所有單字。</p>
+        <button class="btn" onclick="location.href='../n4.html'">回到 N4 關卡</button>
+      </div>
+    `;
+    return;
+  }
+
+  game.innerHTML = `
+    <div class="board">
+      <div class="col"><h3>日文</h3><div id="left"></div></div>
+      <div class="col"><h3>中文</h3><div id="right"></div></div>
+    </div>
+    <div class="footer">
+      <div class="progress">完成：${solved} / ${WORDS.length}</div>
+    </div>
+  `;
+
+  const L = document.getElementById("left");
+  const R = document.getElementById("right");
+
+  left.forEach(w=>{
+    if(solvedIds.has(w.id)) return;
+    const d=document.createElement("div");
+    d.className="card";
+    d.textContent=w.jp;
+    d.onclick=()=>select(d,w,"jp");
+    L.appendChild(d);
+  });
+
+  right.forEach(w=>{
+    if(solvedIds.has(w.id)) return;
+    const d=document.createElement("div");
+    d.className="card";
+    d.textContent=w.zh;
+    d.onclick=()=>select(d,w,"zh");
+    R.appendChild(d);
+  });
+}
+
+function select(el, word, side){
+  if(locked) return;
+  if(el.classList.contains("ok")) return;
+
+  el.classList.add("selected");
+
+  if(!first){
+    first = {el, word, side};
+    return;
+  }
+
+  locked = true;
+
+  const ok = first.word.id === word.id && first.side !== side;
+
+  if(ok){
+    el.classList.add("ok");
+    first.el.classList.add("ok");
+    solvedIds.add(word.id);
+    saveState();
+    setTimeout(()=>{ first=null; locked=false; render(); }, 250);
+  }else{
+    el.classList.add("err");
+    first.el.classList.add("err");
+
+    recordWrong({ tier:"N4", stage:"1", jp:first.word.jp, zh:first.word.zh });
+
+    setTimeout(()=>{
+      el.classList.remove("err","selected");
+      first.el.classList.remove("err","selected");
+      first=null;
+      locked=false;
+    }, 500);
+  }
+}
+
+/* ===== init ===== */
+function init(){
+  loadState();
+  left = shuffle(WORDS);
+  right = shuffle(WORDS);
+  render();
+}
+init();
+</script>
+</body>
+</html>

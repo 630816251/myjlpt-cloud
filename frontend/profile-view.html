@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>帳號資訊｜MyJLPT Cloud</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Helvetica, Arial, "Noto Sans TC", "PingFang TC", sans-serif;
+      background-color: #f0f2f5;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 16px;
+    }
+
+    .card {
+      width: 560px;
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 28px 32px;
+    }
+
+    .brand {
+      font-size: 28px;
+      font-weight: bold;
+      color: #3a6f8f;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 24px;
+    }
+
+    .info-table {
+      border-top: 1px solid #ddd;
+      border-left: 1px solid #ddd;
+      margin-bottom: 24px;
+    }
+
+    .info-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      border-bottom: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+    }
+
+    .info-row div {
+      padding: 10px 12px;
+      font-size: 15px;
+    }
+
+    .label {
+      background: #f7f7f7;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .value {
+      color: #222;
+      word-break: break-all;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      border: 1px solid #3a6f8f;
+      background: #3a6f8f;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .primary-btn:hover {
+      background: #2f5d78;
+    }
+
+    .danger-box {
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+
+    .danger-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #d32f2f;
+      margin-bottom: 8px;
+    }
+
+    .danger-text {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .danger-btn {
+      padding: 8px 14px;
+      font-size: 14px;
+      border: 1px solid #d32f2f;
+      background: #d32f2f;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .danger-btn:hover {
+      background: #b71c1c;
+    }
+
+    .back-link {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .back-link a {
+      color: #3a6f8f;
+      text-decoration: none;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+
+      <div class="brand">MyJLPT Cloud</div>
+      <div class="title">帳號資訊</div>
+
+      <div class="info-table">
+        <div class="info-row">
+          <div class="label">Email</div>
+          <div class="value" id="email"></div>
+        </div>
+        <div class="info-row">
+          <div class="label">姓氏</div>
+          <div class="value" id="familyName"></div>
+        </div>
+        <div class="info-row">
+          <div class="label">名字</div>
+          <div class="value" id="givenName"></div>
+        </div>
+        <div class="info-row">
+          <div class="label">生日</div>
+          <div class="value" id="birthdate"></div>
+        </div>
+        <div class="info-row">
+          <div class="label">性別</div>
+          <div class="value" id="gender"></div>
+        </div>
+      </div>
+
+      <button class="primary-btn" onclick="location.href='change-password.html'">
+        修改密碼
+      </button>
+
+      <div class="danger-box">
+        <div class="danger-title">帳號註銷</div>
+        <div class="danger-text">
+          註銷帳號後，所有學習資料將永久刪除，<br>
+          此操作不可恢復。
+        </div>
+        <button class="danger-btn" onclick="deleteMyAccount()">
+          永久註銷帳號
+        </button>
+      </div>
+
+      <div class="back-link">
+        <a href="index.html">返回首頁</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 共用設定 -->
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+
+  <script>
+    // 🔐 基本登入檢查
+    if (!isLoggedIn()) {
+      location.replace("login.html");
+    }
+
+    // 📥 載入 Cognito 使用者資料
+    async function loadProfile() {
+      try {
+        const data = await cognitoPost(
+          "AWSCognitoIdentityProviderService.GetUser",
+          {
+            AccessToken: localStorage.getItem("accessToken")
+          }
+        );
+
+        const attrs = {};
+        data.UserAttributes.forEach(a => {
+          attrs[a.Name] = a.Value;
+        });
+
+        email.textContent = attrs.email || "";
+        familyName.textContent = attrs.family_name || "";
+        givenName.textContent = attrs.given_name || "";
+        birthdate.textContent = attrs.birthdate || "";
+        gender.textContent = attrs.gender || "";
+
+      } catch (err) {
+        alert("載入帳號資料失敗，請重新登入");
+        localStorage.clear();
+        location.replace("login.html");
+      }
+    }
+
+    loadProfile();
+
+    // 🔥 使用者自助註銷帳號（硬刪）
+    async function deleteMyAccount() {
+      if (!confirm("⚠️ 確定要永久註銷帳號？此動作不可復原")) return;
+
+      try {
+        const res = await fetch(`${MYJLPT_CONFIG.API.USER}/me`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": "Bearer " + localStorage.getItem("accessToken")
+            // ✅ 不送 Content-Type（沒有 body）
+          }
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert(err.message || "註銷失敗，請稍後再試");
+          return;
+        }
+
+        alert("帳號已成功註銷");
+        localStorage.clear();
+        location.replace("login.html");
+
+      } catch (e) {
+        alert("連線失敗，請檢查網路或稍後再試");
+      }
+    }
+  </script>
+
+</body>
+</html>

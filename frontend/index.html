@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日語學習中心｜MyJLPT Cloud</title>
+
+<style>
+:root{
+  --brand:#8a7b5a;
+  --text:#1f2a37;
+  --light:#ffffff;
+  --bg:#f7f3ed;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:"Noto Sans TC", Helvetica, Arial, sans-serif;
+  color:var(--text);
+  padding-top:70px; /* fixed header 高度 */
+}
+
+/* ===== Header ===== */
+.site-header{
+  position:fixed;
+  top:0;
+  width:100%;
+  background:#fff;
+  border-bottom:1px solid #ddd;
+  z-index:100;
+}
+
+.nav{
+  max-width:1200px;
+  margin:auto;
+  padding:14px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.logo{
+  font-weight:800;
+  font-size:18px;
+}
+
+.nav-right{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.nav a{
+  text-decoration:none;
+  color:#333;
+  font-size:14px;
+}
+
+/* avatar */
+.avatar-wrapper{
+  position:relative;
+}
+
+.avatar{
+  cursor:pointer;
+  font-size:20px;
+}
+
+.avatar-menu{
+  position:absolute;
+  right:0;
+  top:36px;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:6px;
+  min-width:140px;
+  display:none;
+  box-shadow:0 8px 20px rgba(0,0,0,.15);
+}
+
+.avatar-menu.show{
+  display:block;
+}
+
+.menu-item{
+  padding:10px 14px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.menu-item:hover{
+  background:#f3f3f3;
+}
+
+/* ===== Carousel ===== */
+.carousel{
+  position:relative;
+  height:90vh;
+  overflow:hidden;
+}
+
+.slide{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  opacity:0;
+  transition:opacity 1s ease;
+}
+
+.slide.active{
+  opacity:1;
+}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.25);
+}
+
+.hero-content{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:#fff;
+  text-align:center;
+  max-width:800px;
+  padding:0 20px;
+}
+
+.hero-content h1{
+  font-size:48px;
+  margin:0 0 20px;
+  letter-spacing:2px;
+}
+
+.hero-content p{
+  font-size:20px;
+  margin-bottom:30px;
+}
+
+.hero-content button{
+  padding:12px 36px;
+  border:none;
+  border-radius:4px;
+  background:var(--brand);
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.hero-content button:hover{
+  opacity:.9;
+}
+
+/* dots */
+.dots{
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:10px;
+}
+
+.dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#ddd;
+  cursor:pointer;
+}
+
+.dot.active{
+  background:var(--brand);
+}
+
+/* ===== 學習模式 ===== */
+.modes{
+  background:var(--bg);
+  padding:60px 20px 80px;
+}
+
+.modes-title{
+  background:var(--brand);
+  color:#fff;
+  text-align:center;
+  font-size:26px;
+  font-weight:700;
+  padding:18px 0;
+  margin-bottom:50px;
+  letter-spacing:2px;
+}
+
+.modes-grid{
+  max-width:1200px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:40px;
+}
+
+.mode-card{
+  background:#fdfaf6;
+  text-align:center;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.mode-card img{
+  width:100%;
+  height:200px;
+  object-fit:cover;
+  display:block;
+}
+
+.mode-card h3{
+  margin:18px 0 14px;
+  font-size:18px;
+  font-weight:600;
+}
+
+.mode-card button{
+  margin-bottom:20px;
+  padding:10px 0;
+  width:80%;
+  border:none;
+  background:var(--brand);
+  color:#fff;
+  font-size:14px;
+  cursor:pointer;
+}
+
+.mode-card button:hover{
+  opacity:.9;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== Header ===== -->
+<header class="site-header">
+  <div class="nav">
+    <div class="logo">🌸 日語學習中心</div>
+
+    <div class="nav-right">
+      <a href="index.html">首頁</a>
+      <a href="#">關於</a>
+      <a href="#">學習工具</a>
+      <a href="#">考試資訊</a>
+
+      <div class="avatar-wrapper">
+        <div class="avatar" onclick="toggleMenu()">👤</div>
+        <div class="avatar-menu" id="avatarMenu">
+          <div class="menu-item" onclick="location.href='profile-view.html'">⚙️ 帳號設定</div>
+          <div class="menu-item" onclick="logout()">🚪 登出</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Carousel ===== -->
+<section class="carousel">
+  <div class="slide active" style="background-image:url('icons/1.png')"></div>
+  <div class="slide" style="background-image:url('icons/2.png')"></div>
+
+  <div class="overlay"></div>
+
+  <div class="hero-content">
+    <h1>為您打造更輕鬆的學習方式</h1>
+    <p>隨時隨地，輕鬆掌握日語</p>
+    <button onclick="location.href='vocab.html'">開始學習</button>
+  </div>
+
+  <div class="dots"></div>
+</section>
+
+<!-- ===== 學習模式 ===== -->
+<section class="modes">
+  <div class="modes-title">學習模式</div>
+
+  <div class="modes-grid">
+    <div class="mode-card">
+      <img src="assets/mode1.jpg">
+      <h3>單字練習</h3>
+      <button onclick="location.href='vocab.html'">了解詳情</button>
+    </div>
+
+    <div class="mode-card">
+      <img src="assets/mode2.jpg">
+      <h3>文法</h3>
+      <button onclick="location.href='grammar.html'">了解詳情</button>
+    </div>
+
+    <div class="mode-card">
+      <img src="assets/mode3.jpg">
+      <h3>學習紀錄及規劃</h3>
+      <button onclick="location.href='progress.html'">了解詳情</button>
+    </div>
+
+    <div class="mode-card">
+      <img src="assets/mode4.jpg">
+      <h3>錯題庫</h3>
+      <button onclick="location.href='wrong.html'">了解詳情</button>
+    </div>
+
+    <div class="mode-card">
+      <img src="assets/mode6.jpg">
+      <h3>筆記</h3>
+      <button onclick="location.href='ocr-notes.html'">了解詳情</button>
+    </div>
+
+    <div class="mode-card">
+      <img src="assets/mode5.jpg">
+      <h3>討論區</h3>
+      <button>即將開放</button>
+    </div>
+  </div>
+</section>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+
+<script>
+/* ===== 登入檢查 ===== */
+if (!isLoggedIn()) location.href = "login.html";
+
+/* ===== avatar menu ===== */
+function toggleMenu(){
+  document.getElementById("avatarMenu").classList.toggle("show");
+}
+
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".avatar-wrapper")){
+    document.getElementById("avatarMenu").classList.remove("show");
+  }
+});
+
+/* ===== Admin menu ===== */
+(function(){
+  const idToken = localStorage.getItem("idToken");
+  if(!idToken) return;
+
+  try{
+    const payload = JSON.parse(atob(idToken.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+    const groups = payload["cognito:groups"] || [];
+
+    if(groups.includes("Admins")){
+      const menu = document.getElementById("avatarMenu");
+      const admin = document.createElement("div");
+      admin.className = "menu-item";
+      admin.textContent = "🛠 管理後台";
+      admin.onclick = ()=>location.href="admin.html";
+      menu.insertBefore(admin, menu.lastElementChild);
+    }
+  }catch(e){
+    console.warn("Admin menu error", e);
+  }
+})();
+
+/* ===== Carousel logic ===== */
+const slides = document.querySelectorAll(".slide");
+const dotsBox = document.querySelector(".dots");
+let current = 0;
+
+slides.forEach((_,i)=>{
+  const d = document.createElement("div");
+  d.className = "dot" + (i===0?" active":"");
+  d.onclick = ()=>showSlide(i);
+  dotsBox.appendChild(d);
+});
+
+const dots = document.querySelectorAll(".dot");
+
+function showSlide(i){
+  slides.forEach(s=>s.classList.remove("active"));
+  dots.forEach(d=>d.classList.remove("active"));
+  slides[i].classList.add("active");
+  dots[i].classList.add("active");
+  current = i;
+}
+
+setInterval(()=>{
+  showSlide((current+1)%slides.length);
+},5000);
+</script>
+
+</body>
+</html>

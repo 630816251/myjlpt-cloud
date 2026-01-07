@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>MyJLPT Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body { margin:0; font-family: Helvetica, Arial, "Noto Sans TC"; background:#f5f6f8; }
+header { background:#fff; border-bottom:1px solid #ddd; padding:14px 20px; font-weight:800; color:#3a6f8f; }
+.wrap { max-width:1200px; margin:20px auto; padding:0 16px; }
+.card { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; }
+
+.toolbar { display:grid; grid-template-columns:2fr 1fr auto auto; gap:10px; margin-bottom:12px; }
+input, select { padding:8px; border:1px solid #ccc; border-radius:6px; }
+
+button { padding:8px 12px; border-radius:6px; border:1px solid #3a6f8f; background:#3a6f8f; color:#fff; font-weight:700; cursor:pointer; }
+button.secondary { background:#fff; color:#3a6f8f; }
+button.danger { background:#d32f2f; border-color:#d32f2f; }
+
+table { width:100%; border-collapse:collapse; }
+th, td { border-top:1px solid #eee; padding:10px; font-size:14px; }
+th { background:#fafafa; cursor:pointer; user-select:none; }
+th span { font-size:12px; margin-left:4px; }
+
+.badge { padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+.badge.ACTIVE { background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; }
+.badge.DISABLED { background:#fff3e0; color:#ef6c00; border:1px solid #ef6c00; }
+
+.actions button { margin-right:6px; }
+
+.modal {
+  position:fixed; inset:0; background:rgba(0,0,0,.5);
+  display:none; align-items:center; justify-content:center;
+}
+.modal.show { display:flex; }
+.modal-box {
+  background:#fff; width:420px; border-radius:8px; padding:16px;
+}
+.modal-box h3 { margin-top:0; color:#3a6f8f; }
+.modal-box div { margin-bottom:8px; font-size:14px; }
+</style>
+</head>
+
+<body>
+
+<header>MyJLPT 管理者後台</header>
+
+<div class="wrap">
+<div class="card">
+
+<div class="toolbar">
+  <input id="q" placeholder="搜尋 email / 姓名 / userId">
+  <select id="status">
+    <option value="ALL">全部狀態</option>
+    <option value="ACTIVE">ACTIVE</option>
+    <option value="DISABLED">DISABLED</option>
+  </select>
+  <button id="btnReload">重新載入</button>
+  <button class="secondary" id="btnCSV">匯出 CSV</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Email</th>
+  <th>姓名</th>
+  <th>生日 / 性別</th>
+  <th id="thCreated">建立時間 <span id="sortIcon">▼</span></th>
+  <th>UserId</th>
+  <th>狀態</th>
+  <th>操作</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>使用者詳細資料</h3>
+    <div><b>Email：</b><span id="mEmail"></span></div>
+    <div><b>姓名：</b><span id="mName"></span></div>
+    <div><b>生日：</b><span id="mBirth"></span></div>
+    <div><b>性別：</b><span id="mGender"></span></div>
+    <div><b>建立時間：</b><span id="mCreated"></span></div>
+    <div><b>UserId：</b><span id="mUserId"></span></div>
+    <button onclick="closeModal()">關閉</button>
+  </div>
+</div>
+
+<script>
+/* 🔐 Admin Gatekeeper（只管顯示，不管安全） */
+(function adminGuard(){
+  const idToken = localStorage.getItem("idToken");
+  if (!idToken) return location.replace("login.html");
+
+  try {
+    const payload = JSON.parse(atob(idToken.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+    if (!(payload["cognito:groups"]||[]).includes("Admins")) {
+      alert("⛔ 僅限管理者");
+      location.replace("index.html");
+    }
+  } catch {
+    localStorage.clear();
+    location.replace("login.html");
+  }
+})();
+
+const ADMIN_API_BASE = "https://6vinzc9dng.execute-api.us-east-1.amazonaws.com";
+let users = [], asc = false;
+
+function authFetch(url, options={}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("accessToken"),
+      "Content-Type": "application/json"
+    }
+  });
+}
+
+function badge(s){ return `<span class="badge ${s}">${s}</span>`; }
+
+function render(){
+  const q = qInput.value.toLowerCase();
+  const st = statusSelect.value;
+
+  let arr = users.filter(u=>{
+    const t = `${u.email}${u.familyName}${u.givenName}${u.userId}`.toLowerCase();
+    return (!q || t.includes(q)) && (st==="ALL" || u.status===st);
+  });
+
+  arr.sort((a,b)=> asc
+    ? new Date(a.createdAt)-new Date(b.createdAt)
+    : new Date(b.createdAt)-new Date(a.createdAt)
+  );
+
+  tbody.innerHTML = arr.map(u=>`
+    <tr>
+      <td>${u.email||""}</td>
+      <td>${u.familyName||""} ${u.givenName||""}</td>
+      <td>${u.birthdate||""} / ${u.gender||""}</td>
+      <td>${u.createdAt||""}</td>
+      <td><a href="#" onclick='openModal(${JSON.stringify(u)})'>${u.userId}</a></td>
+      <td>${badge(u.status)}</td>
+      <td class="actions">
+        ${
+          u.status==="ACTIVE"
+          ? `<button class="secondary" onclick="disableUser('${u.userId}')">停用</button>`
+          : `<span style="color:#999;">已停用</span>`
+        }
+        <button class="danger" onclick="deleteUser('${u.userId}')">刪除</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function load() {
+  try {
+    const r = await fetch(
+  `${ADMIN_API_BASE}/admin/users`,
+  {
+    method: "GET",
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("accessToken"),
+      "Content-Type": "application/json"
+    }
+  }
+);
+    
+
+    // 🚫 權限或登入問題
+    if (r.status === 401 || r.status === 403) {
+      alert("權限不足或登入已過期，請重新登入");
+      localStorage.clear();
+      location.replace("login.html");
+      return;
+    }
+
+    // 🚫 其他錯誤
+    if (!r.ok) {
+      const text = await r.text();
+      console.error("Load users failed:", text);
+      alert("讀取使用者列表失敗");
+      return;
+    }
+
+    // ✅ 成功
+    users = await r.json();
+    render();
+
+  } catch (err) {
+    console.error("Network error:", err);
+    alert("網路錯誤，無法連線到伺服器");
+  }
+}
+
+
+async function disableUser(id){
+  if(!confirm("確定停用此帳號？")) return;
+  await authFetch(`${ADMIN_API_BASE}/admin/users/${id}/disable`,{method:"POST"});
+  load();
+}
+
+async function deleteUser(id){
+  if(!confirm("⚠️ 永久刪除帳號？")) return;
+  await authFetch(`${ADMIN_API_BASE}/admin/users/${id}`,{method:"DELETE"});
+  load();
+}
+
+/* UI */
+const qInput = document.getElementById("q");
+const statusSelect = document.getElementById("status");
+const tbody = document.getElementById("tbody");
+
+btnReload.onclick = load;
+qInput.oninput = render;
+statusSelect.onchange = render;
+thCreated.onclick = ()=>{ asc=!asc; sortIcon.textContent=asc?"▲":"▼"; render(); };
+
+btnCSV.onclick = ()=>{
+  const rows = [["email","familyName","givenName","birthdate","gender","createdAt","status","userId"],
+    ...users.map(u=>[u.email,u.familyName,u.givenName,u.birthdate,u.gender,u.createdAt,u.status,u.userId])
+  ];
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(",")).join("\n")]));
+  a.download="myjlpt_users.csv";
+  a.click();
+};
+
+function openModal(u){
+  modal.classList.add("show");
+  mEmail.textContent=u.email;
+  mName.textContent=`${u.familyName||""} ${u.givenName||""}`;
+  mBirth.textContent=u.birthdate||"";
+  mGender.textContent=u.gender||"";
+  mCreated.textContent=u.createdAt||"";
+  mUserId.textContent=u.userId;
+}
+function closeModal(){ modal.classList.remove("show"); }
+
+load();
+</script>
+</body>
+</html>

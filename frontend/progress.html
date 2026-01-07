@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學習總進度｜MyJLPT Cloud</title>
+
+<style>
+:root{
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --border:#d9dee6;
+  --text:#1f2a37;
+  --muted:#6b7280;
+  --brand:#3a6f8f;
+  --ok:#16a34a;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: Helvetica, Arial, "Noto Sans TC", sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:14px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.brand{
+  font-weight:900;
+  color:var(--brand);
+}
+.btn{
+  border:1px solid var(--border);
+  background:#fff;
+  padding:8px 14px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.wrap{
+  max-width:900px;
+  margin:24px auto 40px;
+  padding:0 16px;
+}
+
+.title{
+  font-size:24px;
+  font-weight:900;
+  margin-bottom:6px;
+}
+.subtitle{
+  color:var(--muted);
+  margin-bottom:18px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+  margin-bottom:16px;
+}
+
+.bar{
+  height:14px;
+  background:#eef2f7;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:10px;
+}
+.bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#3a6f8f,#2f5f7a);
+  transition:width .4s ease;
+}
+
+.meta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.level{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:6px;
+  font-weight:900;
+}
+.level small{
+  color:var(--muted);
+  font-weight:800;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">MyJLPT Cloud｜總進度</div>
+  <button class="btn" onclick="location.href='vocab.html'">返回單字選單</button>
+</header>
+
+<div class="wrap">
+  <div class="title">學習總進度</div>
+  <div class="subtitle">
+    以下為你從 N5 到 N1 的整體學習完成狀況。
+  </div>
+
+  <!-- ===== Overall ===== -->
+  <div class="card">
+    <div class="level">
+      整體進度
+      <small id="overallText">0%</small>
+    </div>
+    <div class="bar">
+      <span id="overallBar"></span>
+    </div>
+  </div>
+
+  <!-- ===== Badge ===== -->
+  <div id="badge" style="display:none; margin:12px 0; text-align:center;">
+    <div style="
+      display:inline-block;
+      padding:14px 18px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#facc15,#f59e0b);
+      color:#78350f;
+      font-weight:900;
+      box-shadow:0 6px 18px rgba(0,0,0,.18);
+    ">
+      🏅 恭喜完成 JLPT 單字全關卡！
+    </div>
+  </div>
+
+  <!-- ===== Detail ===== -->
+  <div class="card" id="detail"></div>
+</div>
+
+<script>
+/* ===== 關卡結構 ===== */
+const STRUCTURE = {
+  N5: ["n5_1","n5_2","n5_3"],
+  N4: ["n4_1","n4_2","n4_3"],
+  N3: ["n3_1","n3_2"],
+  N2: ["n2_1","n2_2"],
+  N1: ["n1_1"]
+};
+
+/* ===== 工具 ===== */
+function getProgress(id){
+  return parseInt(localStorage.getItem(`vocab_progress_${id}`) || "0", 10);
+}
+
+function isCompleted(id){
+  return getProgress(id) >= 5; // 每關 5 題
+}
+
+function render(){
+  const detail=document.getElementById("detail");
+  detail.innerHTML="";
+
+  let totalLevels=0;
+  let completedLevels=0;
+
+  Object.entries(STRUCTURE).forEach(([level, ids])=>{
+    let done=0;
+
+    ids.forEach(id=>{
+      if(isCompleted(id)) done++;
+    });
+
+    totalLevels += ids.length;
+    completedLevels += done;
+
+    const percent=Math.round(done / ids.length * 100);
+
+    detail.innerHTML += `
+      <div class="level">
+        ${level}
+        <small>${done} / ${ids.length} 關（${percent}%）</small>
+      </div>
+      <div class="bar">
+        <span style="width:${percent}%"></span>
+      </div>
+    `;
+  });
+
+  const overall = Math.round(completedLevels / totalLevels * 100);
+  document.getElementById("overallText").textContent = overall + "%";
+  document.getElementById("overallBar").style.width = overall + "%";
+
+  if (overall >= 100) {
+    document.getElementById("badge").style.display = "block";
+  }
+}
+
+render();
+</script>
+
+</body>
+</html>
